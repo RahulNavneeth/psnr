@@ -19,7 +19,7 @@ sampleImgPath :: FilePath
 sampleImgPath = "assets/lennahq.png"
 
 sampleImgCmpPath :: FilePath
-sampleImgCmpPath = "assets/lennahq-cmp.png"
+sampleImgCmpPath = "assets/lennahq-cmp-2.png"
 
 supportedCodec :: VU.Vector Codec
 supportedCodec = VU.fromList ["jpg", "jpeg", "png"]
