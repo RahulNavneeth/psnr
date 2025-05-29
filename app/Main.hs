@@ -12,6 +12,8 @@ import System.IO (readFile)
 type Codec = String
 type RGB = JP.PixelRGB8
 type Image = (JP.Image RGB)
+type MSE = Float
+type PSNR = Float
 
 sampleImgPath :: FilePath
 sampleImgPath = "assets/lennahq.png"
@@ -50,31 +52,27 @@ getImageData path
 
   | otherwise 	      = return Nothing
   
-instance Num RGB where
-  (JP.PixelRGB8 r1 g1 b1) + (JP.PixelRGB8 r2 g2 b2) = JP.PixelRGB8 (r1 + r2) (g1 + g2) (b1 + b2)
-  (JP.PixelRGB8 r1 g1 b1) - (JP.PixelRGB8 r2 g2 b2) = JP.PixelRGB8 (r1 - r2) (g1 - g2) (b1 - b2)
-  (JP.PixelRGB8 r1 g1 b1) * (JP.PixelRGB8 r2 g2 b2) = JP.PixelRGB8 (r1 * r2) (g1 * g2) (b1 * b2)
-
-  abs (JP.PixelRGB8 r g b) = JP.PixelRGB8 (abs r) (abs g) (abs b)
-  signum _ = JP.PixelRGB8 1 1 1
-  fromInteger i = let x = fromInteger i :: Word8 in JP.PixelRGB8 x x x
-
-meanSquareError :: Image -> Image -> RGB 
-meanSquareError image1 image2 = summedMeanValue
+meanSquareError :: Image -> Image -> MSE 
+meanSquareError image1 image2 = constantValue * fromIntegral summedMeanValue
   where 
     meanValue = VU.generate (JP.imageWidth image1 * JP.imageHeight image1) $ \i ->
       let x = i `mod` JP.imageWidth image1
           y = i `div` JP.imageWidth image1
-          p1 = JP.pixelAt image1 x y
-          p2 = JP.pixelAt image2 x y
-      in (p1 - p2) ^ 2
+          JP.PixelRGB8 r1 g1 b1 = JP.pixelAt image1 x y
+          JP.PixelRGB8 r2 g2 b2 = JP.pixelAt image2 x y
+          diff a b = (fromIntegral a - fromIntegral b) ^ 2
+      in diff (r1) (r2) + diff (g1) (g2) + diff (b1) (b2)
 
-    summedMeanValue = VU.foldl' (+) (JP.PixelRGB8 0 0 0) meanValue
+    constantValue = 1.0/(3.0*fromIntegral(JP.imageWidth image1 * JP.imageHeight image1))
+    summedMeanValue = VU.foldl' (+) 0 meanValue
 
 instance Show Image where
 	show img = "Image (" ++ show (JP.imageWidth img) ++ " X " ++ show (JP.imageHeight img) ++ ")"
 
-main :: IO (Either String RGB) 
+psnr :: MSE -> PSNR
+psnr mse = (20 * logBase 10 255)  - (10 * logBase 10 mse)
+
+main :: IO (Either String PSNR) 
 main 
 	| allEq codecArr = do
 		image1 <- getImageData sampleImgPath
@@ -83,7 +81,7 @@ main
 			(Just x, Just y)
 					| validateDimension x y -> do
 							putStrLn $ (show x) ++ "\n" ++ (show y)
-							return $ Right (meanSquareError x y)
+							return $ Right (psnr $ meanSquareError x y)
 					| otherwise -> return $ Left ":( Invalid dimensions"
 			(Nothing, _) 	 -> return $ Left ":( Image 1"
 			(_, Nothing) 	 -> return $ Left ":( Image 2"
