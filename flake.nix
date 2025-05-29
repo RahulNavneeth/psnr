@@ -24,8 +24,6 @@
           shellHook = ''
 		  	cabal update
 		  	cabal build
-            export PKG_CONFIG_PATH="${zlibDev}/lib/pkgconfig"
-            echo "PKG_CONFIG_PATH set to: $PKG_CONFIG_PATH"
           '';
         };
       });
