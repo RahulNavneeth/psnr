@@ -14,14 +14,16 @@
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            clang
             zlib
             pkg-config
+
             ghc
             cabal-install
           ];
 
           shellHook = ''
+		  	cabal update
+		  	cabal build
             export PKG_CONFIG_PATH="${zlibDev}/lib/pkgconfig"
             echo "PKG_CONFIG_PATH set to: $PKG_CONFIG_PATH"
           '';
